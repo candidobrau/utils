@@ -1,0 +1,3 @@
+# CJ's Utilities Repo
+
+This is a collection of scripts and functions that I use frequently in various workflows. I'm hoping that instead of adding the same `cj_utils.R` file to every single R project I can just source it here from GitHub.
