@@ -23,6 +23,12 @@ excel_pct <- function(x) {
   return(z)
 }
 
+strip_currency <- function(x) {
+  z <- as.numeric(str_replace_all(string = x,
+                                  pattern = "[\\$,]",
+                                  replacement = ""))
+}
+
 get_file <- function(file_path, filename_pattern = ".xlsx$|.xls$") {
   files <- file.info(list.files(path = file_path, 
                                 pattern = filename_pattern, 
