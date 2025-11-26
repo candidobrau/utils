@@ -18,6 +18,52 @@ name_cleaner <- function(df){
   return(df)
 }
 
+# Deal with annoying Excel column headers split across two rows
+clean_report_names <- function(df,
+                               pattern,
+                               new_names,
+                               strict = TRUE,
+                               fixed = FALSE) {
+  # df:        data frame / tibble
+  # pattern:   pattern to match column names (passed to grep)
+  # new_names: character vector of replacement names, in order
+  # strict:    if TRUE, error when there are fewer matches than new_names
+  # fixed:     passed to grep(); if TRUE, treat pattern as literal string
+  
+  duped_names <- names(df)
+  
+  # Find indices of columns whose names match the pattern
+  idx <- grep(pattern, duped_names, fixed = fixed)
+  n_matches <- length(idx)
+  n_replacements <- length(new_names)
+  
+  if (n_matches == 0) {
+    warning("clean_report_names(): no column names matched pattern: ", pattern)
+    return(df)
+  }
+  
+  if (n_replacements == 0) {
+    warning("clean_report_names(): new_names is empty; nothing to do.")
+    return(df)
+  }
+  
+  if (strict && n_matches < n_replacements) {
+    stop(
+      "clean_report_names(): pattern '", pattern,
+      "' matched only ", n_matches, " columns, but ",
+      n_replacements, " replacement names were provided."
+    )
+  }
+  
+  # Only replace as many as we have both matches and new_names for
+  k <- min(n_matches, n_replacements)
+  
+  duped_names[idx[seq_len(k)]] <- new_names[seq_len(k)]
+  
+  names(df) <- duped_names
+  df
+}
+
 excel_pct <- function(x) {
   z <- as.numeric(format(round(x, 3), nsmall = 2))
   return(z)
