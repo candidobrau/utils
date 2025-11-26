@@ -155,3 +155,29 @@ parse_benchmark_part_number <- function(benchmark_part_number,
     revision = revision
   )
 }
+
+
+parse_oxide_serial_number <- function(serial_number, keep_original = TRUE) {
+  # serial_number: vector of serial number strings
+  # keep_original: if TRUE, include the original in the output tibble
+
+  tmp <- tibble::tibble(sn_raw = serial_number)
+
+  parsed <- tmp |>
+    tidyr::separate(
+      sn_raw,
+      into   = c("schema", "cpn", "revision", "serial"),
+      sep    = ":",
+      fill   = "left",
+      extra  = "drop",
+      remove = FALSE
+    )
+
+  if (!keep_original) {
+    parsed <- dplyr::select(parsed, -sn_raw)
+  } else {
+    parsed <- dplyr::rename(parsed, serial_number = sn_raw)
+  }
+
+  parsed
+}
