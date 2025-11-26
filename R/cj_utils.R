@@ -181,3 +181,28 @@ parse_oxide_serial_number <- function(serial_number, keep_original = TRUE) {
 
   parsed
 }
+
+write_excel_to_desktop <- function(x, filename, overwrite = TRUE) {
+  # x must be a named list: name -> data.frame/tibble
+
+  # Expand Desktop path safely
+  desktop <- path.expand("~/Desktop")
+
+  if (!dir.exists(desktop)) {
+    cli::cli_abort("Desktop directory does not exist: {desktop}")
+  }
+
+  out_path <- file.path(desktop, filename)
+
+  cli::cli_alert_info(glue::glue("Creating Excel workbook: {out_path}"))
+
+  openxlsx::saveWorkbook(
+    x,
+    file = out_path,
+    overwrite = overwrite
+  )
+
+  cli::cli_alert_success(glue::glue("Excel file written to Desktop: {out_path}"))
+
+  invisible(out_path)
+}
