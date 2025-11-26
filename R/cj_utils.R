@@ -106,3 +106,52 @@ read_two_row_headers <- function(path,
   
   return(cleaned)
 }
+
+# Parse Benchmark part numbers in Oxide CPN and revision
+parse_benchmark_part_number <- function(benchmark_part_number, 
+                                        left_pad_revision = FALSE) {
+  # 1) Extract CPN: 3 digits, dash, 7 digits
+  cpn_raw <- str_extract(benchmark_part_number, "\\d{3}-\\d{7}")
+  
+  # If CPN parsing fails, recycle the original benchmark_part_number
+  cpn <- if_else(is.na(cpn_raw) & !is.na(benchmark_part_number),
+                 benchmark_part_number,
+                 cpn_raw
+  )
+  
+  # 2) Extract version chunk: V + digits, anywhere like -V001-, -V1_, etc.
+  revision_string <- str_extract(benchmark_part_number,
+                                 "(?<=^|-)V\\d+(?=$|[-_])"
+  )
+  
+  # Just the digits
+  revision_digits <- str_extract(revision_string, "\\d+")
+  
+  # 3) Apply revision rules:
+  #    - no Vxxx suffix        -> revision 1
+  #    - V1 / V01 / V001       -> 1
+  #    - V002                  -> 2, etc.
+  #    - NA benchmark_part_number     -> NA revision
+  revision_int <- case_when(is.na(benchmark_part_number) ~ NA_integer_,
+                            is.na(revision_digits)       ~ 1L,
+                            TRUE                         ~ as.integer(revision_digits)
+  )
+  
+  # 4. Optional left-padding to width 3
+  revision <- if (left_pad_revision) {
+    # Keep NA as NA_character_
+    ifelse(
+      is.na(revision_int),
+      NA_character_,
+      stringr::str_pad(revision_int, width = 3, pad = "0")
+    )
+  } else {
+    revision_int
+  }
+  
+  # Return as tibble so mutate() can splice columns
+  tibble(
+    cpn      = cpn,
+    revision = revision
+  )
+}
