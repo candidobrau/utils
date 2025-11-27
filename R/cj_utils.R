@@ -206,3 +206,101 @@ write_excel_to_desktop <- function(x, filename, overwrite = TRUE) {
 
   invisible(out_path)
 }
+
+# Function to add a sheet to a wb object with common features
+add_wb_sheet <- function(wb_object,
+                         wb_sheet_name,
+                         tab_color,
+                         header_style,
+                         header_names = NULL,
+                         col_widths,
+                         data_df,
+                         date_cols_style = NULL,
+                         date_cols = NULL) {
+  # Add a worksheet
+  openxlsx::addWorksheet(
+    wb = wb_object,
+    sheetName = wb_sheet_name,
+    zoom = 100,
+    tabColour = tab_color
+  )
+
+  cli::cli_alert_success(glue(
+    "Created {wb_sheet_name} tab"
+  ))
+
+  # Rename columns for display
+  if (!is.null(header_names)) {
+    # Only rename columns that actually exist
+    valid_renames <- header_names[header_names %in% names(data_df)]
+
+    if (length(valid_renames) == 0) {
+      cli::cli_inform(glue::glue(
+        "No valid header names found for renaming in {wb_sheet_name}; keeping defaults."
+      ))
+      data_to_write <- data_df
+    } else {
+      data_to_write <- data_df |>
+        dplyr::rename(!!!valid_renames)
+    }
+  } else {
+    data_to_write <- data_df
+  }
+
+  # Add data to worksheet
+  openxlsx::writeData(
+    wb = wb_object,
+    sheet = wb_sheet_name,
+    x = data_to_write,
+    withFilter = TRUE
+  )
+
+  cli::cli_alert_success(glue(
+    "Added data to {wb_sheet_name} tab: {nrow(data_df)} rows × {ncol(data_df)} columns"
+  ))
+
+  # Set column widths
+  openxlsx::setColWidths(
+    wb = wb_object,
+    sheet = wb_sheet_name,
+    cols = seq_along(data_df),
+    widths = col_widths
+  )
+
+  # Add short date style to any date columns
+  if (!is.null(date_cols) && !is.null(date_cols_style)) {
+    # Allow either names or numeric indices
+    if (is.character(date_cols)) {
+      cols_idx <- match(date_cols, names(data_df))
+      cols_idx <- cols_idx[!is.na(cols_idx)]
+    } else {
+      cols_idx <- date_cols
+    }
+
+    if (length(cols_idx) > 0) {
+      # writeData puts header in row 1, data in rows 2:(nrow + 1)
+      openxlsx::addStyle(
+        wb         = wb_object,
+        sheet      = wb_sheet_name,
+        style      = date_cols_style,
+        rows       = 2:(nrow(data_df) + 1),
+        cols       = cols_idx,
+        gridExpand = TRUE,
+        stack      = TRUE
+      )
+    }
+  }
+
+  # Add header row style
+  openxlsx::addStyle(
+    wb = wb_object,
+    sheet = wb_sheet_name,
+    style = header_style,
+    rows = 1,
+    cols = seq_along(data_to_write),
+    gridExpand = TRUE,
+    stack = TRUE
+  )
+
+  invisible(wb_object)
+}
