@@ -1,3 +1,6 @@
+# null coalescing operator
+`%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
+
 name_cleaner <- function(df){
   names(df) <- tolower(names(df))
   names(df) <- str_replace_all(names(df), "\\r\\n", "")
