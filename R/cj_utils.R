@@ -78,14 +78,48 @@ strip_currency <- function(x) {
                                   replacement = ""))
 }
 
-get_file <- function(file_path, filename_pattern = ".xlsx$|.xls$") {
-  files <- file.info(list.files(path = file_path, 
-                                pattern = filename_pattern, 
-                                full.names = TRUE)) %>%
-    rownames_to_column(var = "filename") %>%
-    arrange(desc(mtime)) %>%
-    mutate(filename = tolower(filename))
-  return(files[1, 1])
+# Old get file
+# get_file <- function(file_path, filename_pattern = ".xlsx$|.xls$") {
+#   files <- file.info(list.files(path = file_path, 
+#                                 pattern = filename_pattern, 
+#                                 full.names = TRUE)) %>%
+#     rownames_to_column(var = "filename") %>%
+#     arrange(desc(mtime)) %>%
+#     mutate(filename = tolower(filename))
+#   return(files[1, 1])
+# }
+
+# New get_file
+get_file <- function(file_path, filename_pattern = "\\.xlsx$|\\.xls$") {
+  stopifnot(dir.exists(file_path))
+
+  files <- list.files(
+    path = file_path,
+    pattern = filename_pattern,
+    full.names = TRUE,
+    ignore.case = TRUE
+  )
+
+  if (length(files) == 0) {
+    cli::cli_abort(
+      "No matching files found in {.path {file_path}} (pattern: {filename_pattern})"
+    )
+  }
+
+  info <- file.info(files)
+  info$filename <- rownames(info)
+
+  info <- info |>
+    tibble::as_tibble() |>
+    arrange(desc(mtime))
+
+  chosen <- info$filename[1]
+
+  log_info(
+    "get_file(): {nrow(info)} matching file(s) in '{file_path}' (pattern: '{filename_pattern}'); using newest: '{basename(chosen)}' ({format(info$mtime[1])})"
+  )
+
+  chosen
 }
 
 
